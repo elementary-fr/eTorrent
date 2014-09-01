@@ -11,7 +11,7 @@ dist_vapi_DATA = etorrent-0.1.vapi
 libetorrentincludedir = $(includedir)
 libetorrentinclude_HEADERS = libetorrent.h
 
-libetorrent_la_SOURCES = session.vala error.vala
+libetorrent_la_SOURCES = session.vala error.vala torrent.vala
 	
 libetorrent_la_VALAFLAGS = --library libetorrent -H libetorrent.h --pkg libsoup-2.4 --pkg json-glib-1.0 \
 	--vapi=etorrent-0.1.vapi --disable-warnings --gir ETorrent-0.1.gir
