@@ -5,6 +5,11 @@ Some mockups of this project! :)
 
 new: start of application & library writing.
 
+You must install this prerequisities before build eTorrent:
+	- transmission-daemon
+	- libsoup-2.4-dev
+	- libjson-glib-dev
+
 ![Texte alternatif](https://raw.githubusercontent.com/fsvh/eTorrent/master/mockups/etorrent1.png "eTorrent")
 
 ![Texte alternatif](https://raw.githubusercontent.com/fsvh/eTorrent/master/mockups/etorrent2.png "eTorrent")
