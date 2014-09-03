@@ -1,13 +1,13 @@
 namespace ETorrent {
-	public class Session {
+	public class Session : Object {
 		string username;
 		string password;
 		string ip;
 		uint16 port;
-		string url;
-		string session_id;
+		internal static string url;
+		internal static string session_id;
 		
-		Soup.Session soup_session;
+		internal static Soup.Session soup_session;
 		
 		~Session() {
 			string s = """{
@@ -37,7 +37,7 @@ namespace ETorrent {
 			is_init = true;
 		}
 		
-		Json.Node session_get () throws GLib.Error {
+		Value session_get (string parameter) throws GLib.Error {
 			string s = """{
 				"method" : "session-get"
 			}""";
@@ -47,13 +47,17 @@ namespace ETorrent {
 			soup_session.send_message (msg);
 			var parser = new Json.Parser();
 			parser.load_from_data ((string)msg.response_body.data);
-			return parser.get_root();
+			return parser.get_root().get_object().get_object_member ("arguments").get_member (parameter).get_value();
 		}
 		
-		void session_set (Json.Object object) throws GLib.Error {
+		void session_set (string parameter, Value val) throws GLib.Error {
 			var o = new Json.Object();
+			var arguments = new Json.Object();
+			var node = new Json.Node.alloc();
+			node.set_value (val);
+			arguments.set_member (parameter, node);
 			o.set_string_member ("method", "session-set");
-			o.set_object_member ("arguments", object);
+			o.set_object_member ("arguments", arguments);
 			send_object (o);
 		}
 		
@@ -64,11 +68,12 @@ namespace ETorrent {
 			object.set_string_member ("filename", torrent.path);
 			o.set_string_member ("method", "torrent-add");
 			o.set_object_member ("arguments", object);
-			torrent.added(receive_object (o));
+			torrent.added_internal(receive_object (o));
 		}
 		
 		public void remove (Torrent torrent, bool delete_files = false) throws GLib.Error {
 			remove_at (torrent.id, delete_files);
+			torrent.removed();
 		}
 		
 		public void remove_at (int64 index, bool delete_files = false) throws GLib.Error {
@@ -83,20 +88,21 @@ namespace ETorrent {
 			send_object (o);
 		}
 		
-		void send_object (Json.Object object) throws GLib.Error {
+		internal static void send_object (Json.Object object) throws GLib.Error {
 			var node = new Json.Node (Json.NodeType.OBJECT);
 			node.set_object (object);
 			var gen = new Json.Generator();
 			gen.root = node;
 			var msg = new Soup.Message ("POST", url);
 			msg.request_headers.append ("X-Transmission-Session-Id", session_id);
+			print ("send: %s\n", gen.to_data (null));
 			msg.request_body.append (Soup.MemoryUse.COPY, gen.to_data (null).data);
 			soup_session.send_message (msg);
 		}
 		
-		Json.Object receive_object (Json.Object object) throws GLib.Error {
+		internal static Json.Object receive_object (Json.Object sender) throws GLib.Error {
 			var node = new Json.Node (Json.NodeType.OBJECT);
-			node.set_object (object);
+			node.set_object (sender);
 			var gen = new Json.Generator();
 			gen.root = node;
 			var msg = new Soup.Message ("POST", url);
@@ -104,35 +110,238 @@ namespace ETorrent {
 			msg.request_body.append (Soup.MemoryUse.COPY, gen.to_data (null).data);
 			soup_session.send_message (msg);
 			var parser = new Json.Parser();
-			print ("%s\n", (string)msg.response_body.data);
+			print ("%s\n\n", (string)msg.response_body.data);
 			parser.load_from_data ((string)msg.response_body.data);
 			return parser.get_root().get_object();
 		}
 		
 		public int64 alt_speed_down {
 			get {
-				return session_get().get_object().get_object_member ("arguments").get_int_member ("alt-speed-down");
+				return (int64)session_get ("alt-speed-down");
 			}
 			set {
-				var o = new Json.Object();
-				o.set_int_member ("alt-speed-down", value);
-				session_set (o);
+				session_set ("alt-speed-down", value);
+			}
+		}
+		
+		public bool alt_speed_enabled {
+			get {
+				return (bool)session_get ("alt-speed-enabled");
+			}
+			set {
+				session_set ("alt-speed-enabled", value);
 			}
 		}
 		
 		public int64 alt_speed_up {
 			get {
-				return session_get().get_object().get_object_member ("arguments").get_int_member ("alt-speed-up");
+				return (int64)session_get ("alt-speed-up");
 			}
 			set {
-				var o = new Json.Object();
-				o.set_int_member ("alt-speed-up", value);
-				session_set (o);
+				session_set ("alt-speed-up", value);
 			}
 		}
 		
-		public bool conflict { get; set; }
+		public string config_dir {
+			owned get {
+				return (string)session_get ("config-dir");
+			}
+		}
+		
+		public bool conflict { get; private set; }
+		
+		public string download_dir {
+			owned get {
+				return (string)session_get ("download-dir");
+			}
+			set {
+				session_set ("download-dir", value);
+			}
+		}
+		
+		public int64 download_queue_size {
+			get {
+				return (int64)session_get ("download-queue-size");
+			}
+			set {
+				session_set ("download-queue-size", value);
+			}
+		}
+		
+		public bool download_queue_enabled {
+			get {
+				return (bool)session_get ("download-queue-enabled");
+			}
+			set {
+				session_set ("download-queue-enabled", value);
+			}
+		}
+		
+		public bool dht_enabled {
+			get {
+				return (bool)session_get ("dht-enabled");
+			}
+			set {
+				session_set ("dht-enabled", value);
+			}
+		}
+		
+		public EncryptionType encryption {
+			get {
+				return EncryptionType.from_string ((string)session_get ("encryption"));
+			}
+			set {
+				session_set ("encryption", value.to_string());
+			}
+		}
+		
+		public string incomplete_dir {
+			owned get {
+				return (string)session_get ("incomplete-dir");
+			}
+			set {
+				session_set ("incomplete-dir", value);
+			}
+		}
+		
+		public bool incomplete_dir_enabled {
+			get {
+				return (bool)session_get ("incomplete-dir-enabled");
+			}
+			set {
+				session_set ("incomplete-dir-enabled", value);
+			}
+		}
 		
 		public bool is_init { get; private set; }
+		
+		public bool lpd_enabled {
+			get { return (bool)session_get ("lpd-enabled"); }
+			set { session_set ("lpd-enabled", value); }
+		}
+		
+		public int64 peer_limit_global {
+			get { return (int64)session_get ("peer-limit-global"); }
+			set { session_set ("peer-limit-global", value); }
+		}
+		
+		public int64 peer_limit_per_torrent {
+			get { return (int64)session_get ("peer-limit-per-torrent"); }
+			set { session_set ("peer-limit-per-torrent", value); }
+		}
+		
+		public int64 peer_port {
+			get { return (int64)session_get ("peer-port"); }
+			set { session_set ("peer-port", value); }
+		}
+		
+		public bool peer_port_random_on_start {
+			get { return (bool)session_get ("peer-port-random-on-start"); }
+			set { session_set ("peer-port-random-on-start", value); }
+		}
+		
+		public bool pex_enabled {
+			get { return (bool)session_get ("pex-enabled"); }
+			set { session_set ("pex-enabled", value); }
+		}
+		
+		public bool port_forwarding_enabled {
+			get { return (bool)session_get ("port-forwarding-enabled"); }
+			set { session_set ("port-forwarding-enabled", value); }
+		}
+		
+		public bool rename_partial_files {
+			get { return (bool)session_get ("rename-partial-files"); }
+			set { session_set ("rename-partial-files", value); }
+		}
+		
+		public int64 rpc_version {
+			get { return (int64)session_get ("rpc-version"); }
+		}
+		
+		public int64 rpc_version_minimum {
+			get { return (int64)session_get ("rpc-version-minimum"); }
+		}
+		
+		public double seed_ratio_limit {
+			get { return (double)session_get ("seedRatioLimit"); }
+			set { session_set ("seedRatioLimit", value); }
+		}
+		
+		public bool seed_ratio_limited {
+			get { return (bool)session_get ("seedRatioLimited"); }
+			set { session_set ("seedRatioLimited", value); }
+		}
+		
+		public int64 seed_queue_size {
+			get { return (int64)session_get ("seed-queue-size"); } 
+			set { session_set ("seed-queue-size", value); }
+		}
+		
+		public bool seed_queue_enabled {
+			get { return (bool)session_get ("seed-queue-enabled"); } 
+			set { session_set ("seed-queue-enabled", value); }
+		}
+		
+		public int64 speed_limit_down {
+			get { return (int64)session_get ("speed-limit-down"); }
+			set { session_set ("speed-limit-down", value); }
+		}
+		
+		public bool speed_limit_down_enabled {
+			get { return (bool)session_get ("speed-limit-down-enabled"); }
+			set { session_set ("speed-limit-down-enabled", value); }
+		}
+		
+		public int64 speed_limit_up {
+			get { return (int64)session_get ("speed-limit-up"); }
+			set { session_set ("speed-limit-up", value); }
+		}
+		
+		public bool speed_limit_up_enabled {
+			get { return (bool)session_get ("speed-limit-up-enabled"); }
+			set { session_set ("speed-limit-up-enabled", value); }
+		}
+		
+		public bool start_added_torrents {
+			get { return (bool)session_get ("start-added-torrents"); }
+			set { session_set ("start-added-torrents", value); }
+		}
+		
+		public bool trash_original_torrent_files {
+			get { return (bool)session_get ("trash-original-torrent-files"); }
+			set { session_set ("trash-original-torrent-files", value); }
+		}
+		
+		public bool utp_enabled {
+			get { return (bool)session_get ("utp-enabled"); }
+			set { session_set ("utp-enabled", value); }
+		}
+		
+		public string version {
+			owned get { return (string)session_get ("version"); }
+		}
+	}
+	
+	public enum EncryptionType {
+		NONE,
+		TOLERATED,
+		PREFERRED,
+		REQUIRED;
+		
+		internal static EncryptionType from_string (string s) {
+			if (strcmp (s, "tolerated") == 0)
+				return EncryptionType.TOLERATED;
+			if (strcmp (s, "preferred") == 0)
+				return EncryptionType.PREFERRED;
+			if (strcmp (s, "required") == 0)
+				return EncryptionType.REQUIRED;
+			return EncryptionType.NONE;
+		}
+		
+		public string to_string() {
+			var strv = new string[]{"none", "tolerated", "preferred", "required"};
+			return strv[(int)this];
+		}
 	}
 }
