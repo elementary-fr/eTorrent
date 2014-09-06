@@ -12,9 +12,9 @@ LT_INIT
 AC_PROG_CC
 AM_PROG_VALAC
 
-pkg_modules="glib-2.0 >= 2.24.1
-             gobject-2.0 >= 2.24.1
-             gio-2.0 >= 2.24.1
+pkg_modules="glib-2.0 >= 2.38
+             gobject-2.0 >= 2.38
+             gio-2.0 >= 2.38
              libsoup-2.4
              json-glib-1.0"
 PKG_CHECK_MODULES(LIBETORRENT, [$pkg_modules])

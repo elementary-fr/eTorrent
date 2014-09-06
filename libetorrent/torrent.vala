@@ -128,6 +128,18 @@ namespace ETorrent {
 			}
 		}
 		
+		public void queue_move (MoveDirection direction) {
+			string method = "queue-move-" + direction.to_string();
+			var object = new Json.Object();
+			var arguments = new Json.Object();
+			var ids = new Json.Array();
+			ids.add_int_element (id);
+			arguments.set_array_member ("ids", ids);
+			object.set_object_member ("arguments", arguments);
+			object.set_string_member ("method", method);
+			Session.send_object (object);
+		}
+		
 		internal void torrent_set (string parameter, Value val) {
 			var object = new Json.Object();
 			var arguments = new Json.Object();
@@ -571,15 +583,5 @@ namespace ETorrent {
 			else
 				return null;
 		}
-	}
-	
-	public enum Priority {
-		LOW = -1,
-		NORMAL = 0,
-		HIGH = 1
-	}
-	
-	public enum TorrentMode {
-		GLOBAL, SINGLE, UNLIMITED
 	}
 }

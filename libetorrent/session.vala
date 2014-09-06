@@ -321,27 +321,48 @@ namespace ETorrent {
 		public string version {
 			owned get { return (string)session_get ("version"); }
 		}
-	}
-	
-	public enum EncryptionType {
-		NONE,
-		TOLERATED,
-		PREFERRED,
-		REQUIRED;
 		
-		internal static EncryptionType from_string (string s) {
-			if (strcmp (s, "tolerated") == 0)
-				return EncryptionType.TOLERATED;
-			if (strcmp (s, "preferred") == 0)
-				return EncryptionType.PREFERRED;
-			if (strcmp (s, "required") == 0)
-				return EncryptionType.REQUIRED;
-			return EncryptionType.NONE;
+		Value get_stat (string parameter) {
+			string s = """{
+				"method" : "session-stats"
+			}""";
+			var msg = new Soup.Message ("POST", url);
+			msg.request_headers.append ("X-Transmission-Session-Id", session_id);
+			msg.request_body.append (Soup.MemoryUse.COPY, s.data);
+			soup_session.send_message (msg);
+			var parser = new Json.Parser();
+			parser.load_from_data ((string)msg.response_body.data);
+			return parser.get_root().get_object().get_object_member ("arguments").get_member (parameter).get_value();
 		}
 		
-		public string to_string() {
-			var strv = new string[]{"none", "tolerated", "preferred", "required"};
-			return strv[(int)this];
+		public int64 active_torrent_count {
+			get {
+				return (int64)get_stat ("activeTorrentCount");
+			}
+		}
+		
+		public int64 download_speed {
+			get {
+				return (int64)get_stat ("downloadSpeed");
+			}
+		}
+		
+		public int64 paused_torrent_count {
+			get {
+				return (int64)get_stat ("pausedTorrentCount");
+			}
+		}
+		
+		public int64 torrent_count {
+			get {
+				return (int64)get_stat ("torrentCount");
+			}
+		}
+		
+		public int64 upload_speed {
+			get {
+				return (int64)get_stat ("uploadSpeed");
+			}
 		}
 	}
 }
