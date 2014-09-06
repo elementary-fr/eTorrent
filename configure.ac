@@ -1,7 +1,7 @@
 AC_PREREQ([2.65])
 AC_INIT([etorrent], [0.1], [inizan.yannick@gmail.com], [etorrent])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_FILES([Makefile
 		libetorrent/Makefile
 		src/Makefile

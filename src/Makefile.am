@@ -9,6 +9,6 @@ etorrent_SOURCES = main.vala window.vala widgets/headerbar.vala widgets/closemen
 etorrent_LDADD = ../libetorrent/libetorrent.la $(ETORRENT_LIBS)
 etorrent_VALAFLAGS = ../libetorrent/etorrent-0.1.vapi --pkg gtk+-3.0
 
-CLEANFILES = *.c *.o *.stamp etorrent
+CLEANFILES = widgets/*.c widgets/*.o *.c *.o *.stamp etorrent
 
 DISTCLEANFILES = $(CLEANFILES) Makefile.in
